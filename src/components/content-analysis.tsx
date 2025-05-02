@@ -78,8 +78,8 @@ declare global {
 
 // Function to clean potential markdown code blocks from AI response
 function cleanJsonResponse(rawJson: string): string {
-  // Remove ```json ... ``` markdown code blocks
-  const cleaned = rawJson.trim().replace(/^```json\s*([\s\S]*?)\s*```$/, '$1');
+  // Remove ```json ... ``` markdown code blocks, handling potential whitespace variations
+  const cleaned = rawJson.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/, '$1');
   return cleaned;
 }
 
@@ -207,7 +207,7 @@ export function ContentAnalysis() {
       Identify specific types of ethical violations (e.g., hate speech, discrimination, misinformation, harmful content, privacy violation).
       Determine if the content is ethical (isEthical: true/false or hasEthicalConcerns: true/false).
       Provide a brief reasoning or summary.
-      Respond ONLY with a JSON object containing the fields: 'isEthical' (boolean, for images), 'hasEthicalConcerns' (boolean, for text), 'ethicalViolations' (array of strings), and 'reasoning' (string, for images) or 'summary' (string, for text). Example for image: {"isEthical": false, "ethicalViolations": ["Potential Hate Speech"], "reasoning": "Contains symbols associated with hate groups."}. Example for text: {"hasEthicalConcerns": true, "ethicalViolations": ["Misinformation"], "summary": "The text promotes baseless claims about a public health issue."}`;
+      Respond ONLY with a valid JSON object containing the fields: 'isEthical' (boolean, for images), 'hasEthicalConcerns' (boolean, for text), 'ethicalViolations' (array of strings), and 'reasoning' (string, for images) or 'summary' (string, for text). Example for image: {"isEthical": false, "ethicalViolations": ["Potential Hate Speech"], "reasoning": "Contains symbols associated with hate groups."}. Example for text: {"hasEthicalConcerns": true, "ethicalViolations": ["Misinformation"], "summary": "The text promotes baseless claims about a public health issue."}`;
 
 
       if (analysisType === 'image' && file) {
@@ -215,12 +215,13 @@ export function ContentAnalysis() {
         const prompt = `${promptBase}\n\nContent Type: Image`;
 
         // Using puter.ai.chat with image URL (GPT-4 Vision equivalent)
-        const response = await puter.ai.chat(prompt, imageDataUrl, { model: 'gpt-4o' }); // Use gpt-4o as it handles vision too
+        // Ensure testMode=false if you want actual analysis
+        const response = await puter.ai.chat(prompt, imageDataUrl, false, { model: 'gpt-4o' }); // Use gpt-4o, set testMode false
         // Puter.js ai.chat directly returns the response object, check its structure based on docs/real usage
         const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
+        const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
 
         try {
-           const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
            const parsedResult = JSON.parse(cleanedResult);
            result = {
              isEthical: parsedResult.isEthical ?? !parsedResult.hasEthicalConcerns, // Handle both potential keys
@@ -228,12 +229,12 @@ export function ContentAnalysis() {
              reasoning: parsedResult.reasoning || parsedResult.summary || "No details provided.",
            };
         } catch (parseError) {
-           console.error("Failed to parse AI response:", parseError, "Raw:", rawResult);
+           console.error("Failed to parse AI response (Image):", parseError, "Cleaned:", cleanedResult, "Raw:", rawResult);
            // Fallback: Try to extract info if JSON parsing fails
            result = {
-               isEthical: !/unethical|violation|concern/i.test(rawResult),
-               ethicalViolations: rawResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
-               reasoning: rawResult, // Show raw response if parsing fails
+               isEthical: !/unethical|violation|concern/i.test(cleanedResult), // Use cleaned result for fallback test
+               ethicalViolations: cleanedResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
+               reasoning: `Could not parse structured response. Raw AI output: ${cleanedResult}`, // Show cleaned response in fallback
            };
         }
 
@@ -250,11 +251,12 @@ export function ContentAnalysis() {
         const prompt = `${promptBase}\n\nContent Type: Text\n\nText Content:\n${textContent}`;
 
         // Using puter.ai.chat for text analysis (GPT-4o)
-        const response = await puter.ai.chat(prompt, { model: 'gpt-4o' });
+        // Ensure testMode=false if you want actual analysis
+        const response = await puter.ai.chat(prompt, false, { model: 'gpt-4o' }); // Set testMode false
         const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
+        const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
 
         try {
-            const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
             const parsedResult = JSON.parse(cleanedResult);
              result = {
                hasEthicalConcerns: parsedResult.hasEthicalConcerns ?? !parsedResult.isEthical, // Handle both keys
@@ -262,12 +264,12 @@ export function ContentAnalysis() {
                summary: parsedResult.summary || parsedResult.reasoning || "No details provided.",
              };
         } catch (parseError) {
-             console.error("Failed to parse AI response:", parseError, "Raw:", rawResult);
+             console.error("Failed to parse AI response (Text):", parseError, "Cleaned:", cleanedResult, "Raw:", rawResult);
              // Fallback
              result = {
-                 hasEthicalConcerns: /unethical|violation|concern/i.test(rawResult),
-                 ethicalViolations: rawResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
-                 summary: rawResult,
+                 hasEthicalConcerns: /unethical|violation|concern/i.test(cleanedResult), // Use cleaned result for fallback test
+                 ethicalViolations: cleanedResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
+                 summary: `Could not parse structured response. Raw AI output: ${cleanedResult}`, // Show cleaned response in fallback
              };
         }
 
@@ -293,7 +295,12 @@ export function ContentAnalysis() {
       } else if (typeof err === 'object' && err !== null) {
         // Try to stringify the error object if it's not a standard Error
         try {
-          errorMessage = JSON.stringify(err);
+          // Check for specific Puter error structure if known
+          if ('message' in err) {
+            errorMessage = String(err.message);
+          } else {
+            errorMessage = JSON.stringify(err);
+          }
         } catch (stringifyError) {
           errorMessage = 'An unknown non-standard error occurred.'
         }
@@ -304,7 +311,7 @@ export function ContentAnalysis() {
       toast({
         variant: 'destructive',
         title: 'Analysis Error',
-        description: `An error occurred during analysis: ${errorMessage}`,
+        description: `An error occurred during analysis. Please check console for details. Message: ${errorMessage}`,
       });
 
        // Attempt to sign in if error suggests authentication issue (specific to Puter.js)
@@ -343,7 +350,7 @@ export function ContentAnalysis() {
         <AlertTitle>{isContentEthical ? "Ethical Content Assessment: Clear" : "Potential Ethical Concerns Found"}</AlertTitle>
         <AlertDescription>
           <p className="font-semibold mt-2">Explanation:</p>
-          <p>{explanation}</p>
+          <p className="whitespace-pre-wrap">{explanation}</p> {/* Use pre-wrap for better formatting */}
           {hasConcerns && violations.length > 0 && (
             <>
               <p className="font-semibold mt-2">Detected Violations/Concerns:</p>
