@@ -75,20 +75,6 @@ declare global {
   interface Window {
     puter?: any; // Use 'any' for simplicity or define a more specific type if available
   }
-  // Add type definition for the custom Lottie player element if needed for TypeScript
-  namespace JSX {
-    interface IntrinsicElements {
-      'dotlottie-player': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
-        src: string;
-        background?: string;
-        speed?: string;
-        style?: React.CSSProperties;
-        loop?: boolean;
-        autoplay?: boolean;
-        className?: string; // Allow className prop
-      }, HTMLElement>;
-    }
-  }
 }
 
 // Function to clean potential markdown code blocks from AI response
@@ -338,8 +324,16 @@ export function ContentAnalysis() {
     const violations = result.ethicalViolations || [];
     const explanation = result.reasoning || result.summary || "No detailed explanation provided.";
 
-    let output = `Ethical Analysis Result\n`;
-    output += `=========================\n\n`;
+    let output = `Ethical Analysis Report - Klutz\n`;
+    output += `=================================\n\n`;
+
+    // Add Certification Badge to output
+    if (isContentEthical) {
+      output += `[ CERTIFIED: Ethically Clear ]\n\n`;
+    } else {
+      output += `[ WARNING: Potential Ethical Concerns Found ]\n\n`;
+    }
+
     output += `Overall Assessment: ${isContentEthical ? 'Ethically Clear' : 'Potential Ethical Concerns Found'}\n\n`;
     output += `Explanation:\n${explanation}\n\n`;
 
@@ -349,7 +343,7 @@ export function ContentAnalysis() {
             output += `- ${violation}\n`;
         });
     } else if (!isContentEthical) {
-        output += `No specific violations listed, but concerns were raised.\n`;
+        output += `No specific violations listed, but concerns were raised based on the explanation.\n`;
     } else {
         output += `No significant ethical violations detected.\n`;
     }
@@ -361,7 +355,7 @@ export function ContentAnalysis() {
   const handleDownloadResult = () => {
     if (!analysisResult) return;
     const resultString = formatResultsForOutput(analysisResult);
-    const blob = new Blob([resultString], { type: 'text/plain' }); // Changed type
+    const blob = new Blob([resultString], { type: 'text/plain;charset=utf-8' }); // Specify charset
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -435,13 +429,13 @@ export function ContentAnalysis() {
            )}
         </AlertDescription>
       </Alert>
-       <div className="mt-4 flex justify-end gap-2">
-           <Button variant="outline" onClick={handleDownloadResult}>
-             <Download className="mr-2 h-4 w-4" />
+       <div className="mt-4 flex flex-wrap justify-end gap-2"> {/* Added flex-wrap */}
+           <Button variant="outline" size="lg" onClick={handleDownloadResult}> {/* Increased size */}
+             <Download className="mr-2 h-5 w-5" /> {/* Increased icon size */}
               Download TXT
            </Button>
-          <Button variant="outline" onClick={handleCopyToClipboard}>
-             <ClipboardCopy className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="lg" onClick={handleCopyToClipboard}> {/* Increased size */}
+             <ClipboardCopy className="mr-2 h-5 w-5" /> {/* Increased icon size */}
             Copy Text
           </Button>
         </div>
@@ -462,6 +456,8 @@ export function ContentAnalysis() {
   const isContentPresent = file || textInput.trim();
 
   const handleManualUploadClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Ensure event target is an element before querying
+      if (!(event.target instanceof Element)) return;
       const fileInput = (event.target as HTMLElement).closest('[data-dropzone-root]')?.querySelector('input[type="file"]');
       if (fileInput) {
           (fileInput as HTMLInputElement).click();
@@ -470,9 +466,10 @@ export function ContentAnalysis() {
 
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg"> {/* Increased max-width */}
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">Content Ethics Analyzer</CardTitle>
+        {/* Use the CardTitle component correctly */}
+        <CardTitle>Content Ethics Analyzer</CardTitle>
         <CardDescription>Upload an image or text file, or paste text to check for potential ethical concerns.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -485,18 +482,18 @@ export function ContentAnalysis() {
             <div
               {...getRootProps({ className: 'dropzone' })}
                data-dropzone-root
-               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+               className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center cursor-pointer transition-colors ${ // Adjusted padding
                 isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
               }`}
             >
               <input {...getInputProps()} className="sr-only" />
-              <FileUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <FileUp className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" /> {/* Adjusted size */}
               {isDragActive ? (
-                <p className="text-primary font-semibold">Drop the file here ...</p>
+                <p className="text-primary font-semibold text-sm md:text-base">Drop the file here ...</p> {/* Adjusted text size */}
               ) : (
                  <>
-                    <p className="text-muted-foreground">Drag & drop a supported image or text file here</p>
-                    <Button variant="outline" size="sm" className="mt-4" onClick={handleManualUploadClick}>
+                    <p className="text-muted-foreground text-sm md:text-base">Drag & drop a supported image or text file here</p> {/* Adjusted text size */}
+                    <Button variant="outline" size="sm" className="mt-3 md:mt-4" onClick={handleManualUploadClick}> {/* Adjusted margin */}
                         Or Click to Upload
                     </Button>
                  </>
@@ -521,7 +518,7 @@ export function ContentAnalysis() {
                 placeholder="Paste your text content here..."
                 value={textInput}
                 onChange={handleTextChange}
-                className="min-h-[150px] resize-y"
+                className="min-h-[150px] md:min-h-[200px] resize-y" // Adjusted min-height
                 aria-label="Paste text content"
              />
              <p className="text-xs text-muted-foreground mt-1">You can also paste images directly onto the page (if browser supported).</p>
@@ -537,15 +534,15 @@ export function ContentAnalysis() {
           </Alert>
         )}
 
-        <Separator className="my-6" />
+        <Separator className="my-4 md:my-6" /> {/* Adjusted margin */}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col sm:flex-row justify-end gap-2"> {/* Adjusted flex direction */}
           {isContentPresent && (
-            <Button variant="outline" onClick={clearContent} disabled={isAnalyzing}>
+            <Button variant="outline" onClick={clearContent} disabled={isAnalyzing} className="w-full sm:w-auto"> {/* Responsive width */}
               Clear
             </Button>
           )}
-          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent}>
+          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent} className="w-full sm:w-auto"> {/* Responsive width */}
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
