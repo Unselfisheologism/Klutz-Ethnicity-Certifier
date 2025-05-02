@@ -168,7 +168,7 @@ export function ContentAnalysis() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
       onDrop,
-      noClick: true,
+      noClick: true, // Prevents opening file dialog on click, use button instead
       multiple: false,
       accept: ALL_ACCEPTED_TYPES
   });
@@ -209,7 +209,8 @@ export function ContentAnalysis() {
 
         // Using puter.ai.chat with image URL (GPT-4 Vision equivalent)
         const response = await puter.ai.chat(prompt, imageDataUrl, { model: 'gpt-4o' }); // Use gpt-4o as it handles vision too
-        const rawResult = response?.choices?.[0]?.message?.content || response?.text; // Adapt based on actual response structure
+        // Puter.js ai.chat directly returns the response object, check its structure based on docs/real usage
+        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
 
         try {
            const parsedResult = JSON.parse(rawResult);
@@ -232,6 +233,8 @@ export function ContentAnalysis() {
       } else if (analysisType === 'text' && (file || textInput.trim())) {
         let textContent = '';
         if (file) {
+          // Note: Puter.js might not directly support file objects for text analysis via puter.ai.chat.
+          // We might need to read the text content first. Assuming readFileAsText works.
           textContent = await readFileAsText(file);
         } else {
           textContent = textInput.trim();
@@ -240,7 +243,7 @@ export function ContentAnalysis() {
 
         // Using puter.ai.chat for text analysis (GPT-4o)
         const response = await puter.ai.chat(prompt, { model: 'gpt-4o' });
-        const rawResult = response?.choices?.[0]?.message?.content || response?.text; // Adapt based on actual response structure
+        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
 
         try {
             const parsedResult = JSON.parse(rawResult);
@@ -269,22 +272,45 @@ export function ContentAnalysis() {
         description: 'Ethical review finished successfully.',
       });
     } catch (err) {
-      console.error('Analysis failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred. Please try again.';
+      // Log the raw error first for debugging
+      console.error('Raw analysis error:', err);
+
+      let errorMessage = 'An unknown error occurred. Please try again.';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        // Puter.js might reject with a string message
+        errorMessage = err;
+      } else if (typeof err === 'object' && err !== null) {
+        // Try to stringify the error object if it's not a standard Error
+        try {
+          errorMessage = JSON.stringify(err);
+        } catch (stringifyError) {
+          errorMessage = 'An unknown non-standard error occurred.'
+        }
+      }
+
+      console.error('Processed analysis error message:', errorMessage); // Log processed message too
       setError(`Analysis failed: ${errorMessage}`);
       toast({
         variant: 'destructive',
         title: 'Analysis Error',
         description: `An error occurred during analysis: ${errorMessage}`,
       });
-       // Attempt to sign in if error suggests authentication issue
-       if (typeof err === 'string' && err.includes('authenticate')) {
+
+       // Attempt to sign in if error suggests authentication issue (specific to Puter.js)
+       if (errorMessage.toLowerCase().includes('authenticate') || errorMessage.toLowerCase().includes('sign in')) {
            try {
-               await puter.auth.signIn();
-               toast({ title: "Authentication Required", description: "Please try analyzing again after signing in." });
-           } catch (authError) {
+               if (puter && typeof puter.auth?.signIn === 'function') {
+                 await puter.auth.signIn();
+                 toast({ title: "Authentication Required", description: "Please try analyzing again after signing in." });
+               } else {
+                  setError("Authentication function not available. Please ensure Puter.js is fully loaded and you are logged in.");
+               }
+           } catch (authError: any) {
                console.error("Puter sign-in failed:", authError);
-               setError("Authentication failed. Please ensure you are logged into Puter.");
+               const authErrorMessage = authError instanceof Error ? authError.message : JSON.stringify(authError);
+               setError(`Authentication failed: ${authErrorMessage}. Please ensure you are logged into Puter.`);
            }
        }
     } finally {
@@ -346,6 +372,14 @@ export function ContentAnalysis() {
 
   const isContentPresent = file || textInput.trim();
 
+  const handleManualUploadClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Find the hidden file input associated with the dropzone and click it
+       const fileInput = (event.target as HTMLElement).closest('[data-dropzone-root]')?.querySelector('input[type="file"]');
+      if (fileInput) {
+          (fileInput as HTMLInputElement).click();
+      }
+  };
+
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
@@ -361,23 +395,21 @@ export function ContentAnalysis() {
           </TabsList>
           <TabsContent value="upload">
             <div
-              {...getRootProps()}
+              {...getRootProps({ className: 'dropzone' })} // Add className for easier querySelector
+               data-dropzone-root // Add data attribute for querySelector
                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
               }`}
             >
-              <input {...getInputProps()} />
+              {/* Make the input visually hidden but functional */}
+              <input {...getInputProps()} className="sr-only" />
               <FileUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               {isDragActive ? (
                 <p className="text-primary font-semibold">Drop the file here ...</p>
               ) : (
                  <>
                     <p className="text-muted-foreground">Drag & drop a supported image or text file here</p>
-                    <Button variant="outline" size="sm" className="mt-4" onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering dropzone
-                        const fileInput = (e.target as HTMLElement).closest('.dropzone')?.querySelector('input[type="file"]');
-                        (fileInput as HTMLInputElement | null)?.click();
-                    }}>
+                    <Button variant="outline" size="sm" className="mt-4" onClick={handleManualUploadClick}>
                         Or Click to Upload
                     </Button>
                  </>
