@@ -324,8 +324,8 @@ export function ContentAnalysis() {
     const violations = result.ethicalViolations || [];
     const explanation = result.reasoning || result.summary || "No detailed explanation provided.";
 
-    let output = `Ethical Analysis Report - Klutz\n`;
-    output += `=================================\n\n`;
+    let output = `Klutz Ethics - Ethical Analysis Report\n`; // Updated Brand Name
+    output += `=====================================\n\n`;
 
     // Add Certification Badge to output
     if (isContentEthical) {
@@ -466,34 +466,33 @@ export function ContentAnalysis() {
 
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg"> {/* Increased max-width */}
-      <CardHeader>
-        {/* Use the CardTitle component correctly */}
-        <CardTitle>Content Ethics Analyzer</CardTitle>
-        <CardDescription>Upload an image or text file, or paste text to check for potential ethical concerns.</CardDescription>
+    <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-lg overflow-hidden"> {/* Added responsive padding and rounded corners */}
+      <CardHeader className="p-4 md:p-6"> {/* Responsive padding */}
+        <CardTitle className="text-lg md:text-xl">Content Ethics Analyzer</CardTitle> {/* Responsive text size */}
+        <CardDescription className="text-sm md:text-base">Upload an image or text file, or paste text to check for potential ethical concerns.</CardDescription> {/* Responsive text size */}
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 md:p-6"> {/* Responsive padding */}
         <Tabs defaultValue="upload" className="w-full" onPaste={handlePaste}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="upload">Upload File</TabsTrigger>
-            <TabsTrigger value="paste">Paste Text</TabsTrigger>
+            <TabsTrigger value="upload" className="text-sm md:text-base">Upload File</TabsTrigger> {/* Responsive text size */}
+            <TabsTrigger value="paste" className="text-sm md:text-base">Paste Text</TabsTrigger> {/* Responsive text size */}
           </TabsList>
           <TabsContent value="upload">
             <div
               {...getRootProps({ className: 'dropzone' })}
                data-dropzone-root
-               className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center cursor-pointer transition-colors ${ // Adjusted padding
+               className={`border-2 border-dashed rounded-lg p-4 md:p-8 text-center cursor-pointer transition-colors ${ // Adjusted padding
                 isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
               }`}
             >
               <input {...getInputProps()} className="sr-only" />
-              <FileUp className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" /> {/* Adjusted size */}
+              <FileUp className="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-2 md:mb-4" /> {/* Adjusted size */}
               {isDragActive ? (
                 <p className="text-primary font-semibold text-sm md:text-base">Drop the file here ...</p> {/* Adjusted text size */}
               ) : (
                  <>
                     <p className="text-muted-foreground text-sm md:text-base">Drag & drop a supported image or text file here</p> {/* Adjusted text size */}
-                    <Button variant="outline" size="sm" className="mt-3 md:mt-4" onClick={handleManualUploadClick}> {/* Adjusted margin */}
+                    <Button variant="outline" size="sm" className="mt-2 md:mt-4 text-xs md:text-sm" onClick={handleManualUploadClick}> {/* Adjusted margin and text size */}
                         Or Click to Upload
                     </Button>
                  </>
@@ -518,7 +517,7 @@ export function ContentAnalysis() {
                 placeholder="Paste your text content here..."
                 value={textInput}
                 onChange={handleTextChange}
-                className="min-h-[150px] md:min-h-[200px] resize-y" // Adjusted min-height
+                className="min-h-[100px] md:min-h-[200px] resize-y text-sm md:text-base" // Adjusted min-height and text size
                 aria-label="Paste text content"
              />
              <p className="text-xs text-muted-foreground mt-1">You can also paste images directly onto the page (if browser supported).</p>
@@ -529,8 +528,8 @@ export function ContentAnalysis() {
         {error && (
           <Alert variant="destructive" className="mt-4">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertTitle className="text-sm md:text-base">Error</AlertTitle> {/* Responsive text size */}
+            <AlertDescription className="text-xs md:text-sm">{error}</AlertDescription> {/* Responsive text size */}
           </Alert>
         )}
 
@@ -538,11 +537,11 @@ export function ContentAnalysis() {
 
         <div className="flex flex-col sm:flex-row justify-end gap-2"> {/* Adjusted flex direction */}
           {isContentPresent && (
-            <Button variant="outline" onClick={clearContent} disabled={isAnalyzing} className="w-full sm:w-auto"> {/* Responsive width */}
+            <Button variant="outline" onClick={clearContent} disabled={isAnalyzing} className="w-full sm:w-auto text-sm md:text-base px-3 py-1 md:px-4 md:py-2"> {/* Responsive width and padding/text size */}
               Clear
             </Button>
           )}
-          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent} className="w-full sm:w-auto"> {/* Responsive width */}
+          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent} className="w-full sm:w-auto text-sm md:text-base px-3 py-1 md:px-4 md:py-2"> {/* Responsive width and padding/text size */}
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -557,13 +556,13 @@ export function ContentAnalysis() {
         {isAnalyzing && (
           <div className="mt-4 text-center text-muted-foreground flex items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span>Processing your content, please wait...</span>
+            <span className="text-sm md:text-base">Processing your content, please wait...</span> {/* Responsive text size */}
           </div>
         )}
 
         {analysisResult && !isAnalyzing && (
           <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Analysis Results</h3>
+            <h3 className="text-base md:text-lg font-semibold mb-2">Analysis Results</h3> {/* Responsive text size */}
             {renderResult()}
           </div>
         )}

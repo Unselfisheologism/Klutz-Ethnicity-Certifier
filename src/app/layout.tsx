@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Ethical Eye',
+  title: 'Klutz Ethics',
   description: 'Analyze content for ethical considerations.',
 };
 
