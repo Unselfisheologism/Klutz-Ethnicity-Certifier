@@ -21,10 +21,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // Add the 'dark' class here to enable dark mode
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={cn(
           'min-h-screen bg-background font-sans antialiased',
+          // Gradient is already applied via globals.css using theme variables
           inter.variable
         )}
       >
@@ -32,7 +34,6 @@ export default function RootLayout({
         <Toaster />
         {/* Add Puter.js script */}
         <Script src="https://js.puter.com/v2/" strategy="lazyOnload" />
-        {/* Removed DotLottie Player script */}
       </body>
     </html>
   );
