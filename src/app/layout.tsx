@@ -32,12 +32,7 @@ export default function RootLayout({
         <Toaster />
         {/* Add Puter.js script */}
         <Script src="https://js.puter.com/v2/" strategy="lazyOnload" />
-        {/* Add DotLottie Player script */}
-        <Script
-          src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs"
-          type="module"
-          strategy="lazyOnload"
-        />
+        {/* Removed DotLottie Player script */}
       </body>
     </html>
   );

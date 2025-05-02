@@ -437,29 +437,11 @@ export function ContentAnalysis() {
       </Alert>
        <div className="mt-4 flex justify-end gap-2">
            <Button variant="outline" onClick={handleDownloadResult}>
-             {/* Download Lottie Animation */}
-             <dotlottie-player
-                src="https://lottie.host/70c4e327-d665-413f-87d1-21b2d0bba57c/U24PAi7V9g.lottie"
-                background="transparent"
-                speed="1"
-                style={{ width: '40px', height: '40px', marginRight: '8px' }} // Increased size
-                loop
-                autoplay
-                className="inline-block" // Ensure it behaves like an inline element
-              />
+             <Download className="mr-2 h-4 w-4" />
               Download TXT
            </Button>
           <Button variant="outline" onClick={handleCopyToClipboard}>
-            {/* Clipboard Lottie Animation */}
-             <dotlottie-player
-                src="https://lottie.host/92a0d77c-4b46-438d-80c5-a951d8edd8ef/w7N1aQ7FJe.lottie"
-                background="transparent"
-                speed="1"
-                style={{ width: '40px', height: '40px', marginRight: '8px' }} // Increased size
-                loop
-                autoplay
-                className="inline-block" // Ensure it behaves like an inline element
-              />
+             <ClipboardCopy className="mr-2 h-4 w-4" />
             Copy Text
           </Button>
         </div>
