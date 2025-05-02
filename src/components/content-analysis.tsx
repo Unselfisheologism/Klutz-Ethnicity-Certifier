@@ -365,7 +365,7 @@ export function ContentAnalysis() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'ethical_analysis_result.txt'; // Changed extension
+    a.download = 'Klutz-ethics-report.txt'; // Changed filename
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -592,4 +592,3 @@ export function ContentAnalysis() {
     </Card>
   );
 }
-
