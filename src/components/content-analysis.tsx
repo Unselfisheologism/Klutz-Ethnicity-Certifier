@@ -442,7 +442,7 @@ export function ContentAnalysis() {
                 src="https://lottie.host/70c4e327-d665-413f-87d1-21b2d0bba57c/U24PAi7V9g.lottie"
                 background="transparent"
                 speed="1"
-                style={{ width: '32px', height: '32px', marginRight: '8px' }} // Increased size
+                style={{ width: '40px', height: '40px', marginRight: '8px' }} // Increased size
                 loop
                 autoplay
                 className="inline-block" // Ensure it behaves like an inline element
@@ -455,7 +455,7 @@ export function ContentAnalysis() {
                 src="https://lottie.host/92a0d77c-4b46-438d-80c5-a951d8edd8ef/w7N1aQ7FJe.lottie"
                 background="transparent"
                 speed="1"
-                style={{ width: '32px', height: '32px', marginRight: '8px' }} // Increased size
+                style={{ width: '40px', height: '40px', marginRight: '8px' }} // Increased size
                 loop
                 autoplay
                 className="inline-block" // Ensure it behaves like an inline element
