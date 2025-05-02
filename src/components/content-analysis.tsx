@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileUp, ClipboardPaste, Loader2, Image as ImageIcon, FileText, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileUp, ClipboardPaste, Loader2, Image as ImageIcon, FileText, AlertTriangle, CheckCircle, Download, ClipboardCopy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -214,63 +214,50 @@ export function ContentAnalysis() {
         const imageDataUrl = await fileToDataUri(file);
         const prompt = `${promptBase}\n\nContent Type: Image`;
 
-        // Using puter.ai.chat with image URL (GPT-4 Vision equivalent)
-        // Ensure testMode=false if you want actual analysis
-        const response = await puter.ai.chat(prompt, imageDataUrl, false, { model: 'gpt-4o' }); // Use gpt-4o, set testMode false
-        // Puter.js ai.chat directly returns the response object, check its structure based on docs/real usage
-        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
-        const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
+        const response = await puter.ai.chat(prompt, imageDataUrl, false, { model: 'gpt-4o' });
+        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response));
+        const cleanedResult = cleanJsonResponse(rawResult);
 
         try {
            const parsedResult = JSON.parse(cleanedResult);
            result = {
-             isEthical: parsedResult.isEthical ?? !parsedResult.hasEthicalConcerns, // Handle both potential keys
+             isEthical: parsedResult.isEthical ?? !parsedResult.hasEthicalConcerns,
              ethicalViolations: parsedResult.ethicalViolations || [],
              reasoning: parsedResult.reasoning || parsedResult.summary || "No details provided.",
            };
         } catch (parseError) {
            console.error("Failed to parse AI response (Image):", parseError, "Cleaned:", cleanedResult, "Raw:", rawResult);
-           // Fallback: Try to extract info if JSON parsing fails
-           result = {
-               isEthical: !/unethical|violation|concern/i.test(cleanedResult), // Use cleaned result for fallback test
-               ethicalViolations: cleanedResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
-               reasoning: `Could not parse structured response. Raw AI output: ${cleanedResult}`, // Show cleaned response in fallback
-           };
+           setError(`Failed to parse AI response. Raw output: ${cleanedResult}`); // Set error state
+           setIsAnalyzing(false);
+           return; // Stop execution here
         }
 
 
       } else if (analysisType === 'text' && (file || textInput.trim())) {
         let textContent = '';
         if (file) {
-          // Note: Puter.js might not directly support file objects for text analysis via puter.ai.chat.
-          // We might need to read the text content first. Assuming readFileAsText works.
           textContent = await readFileAsText(file);
         } else {
           textContent = textInput.trim();
         }
         const prompt = `${promptBase}\n\nContent Type: Text\n\nText Content:\n${textContent}`;
 
-        // Using puter.ai.chat for text analysis (GPT-4o)
-        // Ensure testMode=false if you want actual analysis
-        const response = await puter.ai.chat(prompt, false, { model: 'gpt-4o' }); // Set testMode false
-        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
-        const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
+        const response = await puter.ai.chat(prompt, false, { model: 'gpt-4o' });
+        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response));
+        const cleanedResult = cleanJsonResponse(rawResult);
 
         try {
             const parsedResult = JSON.parse(cleanedResult);
              result = {
-               hasEthicalConcerns: parsedResult.hasEthicalConcerns ?? !parsedResult.isEthical, // Handle both keys
+               hasEthicalConcerns: parsedResult.hasEthicalConcerns ?? !parsedResult.isEthical,
                ethicalViolations: parsedResult.ethicalViolations || [],
                summary: parsedResult.summary || parsedResult.reasoning || "No details provided.",
              };
         } catch (parseError) {
              console.error("Failed to parse AI response (Text):", parseError, "Cleaned:", cleanedResult, "Raw:", rawResult);
-             // Fallback
-             result = {
-                 hasEthicalConcerns: /unethical|violation|concern/i.test(cleanedResult), // Use cleaned result for fallback test
-                 ethicalViolations: cleanedResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
-                 summary: `Could not parse structured response. Raw AI output: ${cleanedResult}`, // Show cleaned response in fallback
-             };
+             setError(`Failed to parse AI response. Raw output: ${cleanedResult}`); // Set error state
+             setIsAnalyzing(false);
+             return; // Stop execution here
         }
 
       } else {
@@ -283,19 +270,15 @@ export function ContentAnalysis() {
         description: 'Ethical review finished successfully.',
       });
     } catch (err) {
-      // Log the raw error first for debugging
       console.error('Raw analysis error:', err);
 
       let errorMessage = 'An unknown error occurred. Please try again.';
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === 'string') {
-        // Puter.js might reject with a string message
         errorMessage = err;
       } else if (typeof err === 'object' && err !== null) {
-        // Try to stringify the error object if it's not a standard Error
         try {
-          // Check for specific Puter error structure if known
           if ('message' in err) {
             errorMessage = String(err.message);
           } else {
@@ -306,7 +289,7 @@ export function ContentAnalysis() {
         }
       }
 
-      console.error('Processed analysis error message:', errorMessage); // Log processed message too
+      console.error('Processed analysis error message:', errorMessage);
       setError(`Analysis failed: ${errorMessage}`);
       toast({
         variant: 'destructive',
@@ -314,7 +297,6 @@ export function ContentAnalysis() {
         description: `An error occurred during analysis. Please check console for details. Message: ${errorMessage}`,
       });
 
-       // Attempt to sign in if error suggests authentication issue (specific to Puter.js)
        if (errorMessage.toLowerCase().includes('authenticate') || errorMessage.toLowerCase().includes('sign in')) {
            try {
                if (puter && typeof puter.auth?.signIn === 'function') {
@@ -334,23 +316,54 @@ export function ContentAnalysis() {
     }
   };
 
+  const formatResultsForOutput = (result: PuterAnalysisResult): string => {
+    if (!result) return "";
+    return JSON.stringify(result, null, 2); // Format as pretty-printed JSON
+  };
+
+  const handleDownloadResult = () => {
+    if (!analysisResult) return;
+    const resultString = formatResultsForOutput(analysisResult);
+    const blob = new Blob([resultString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ethical_analysis_result.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Downloaded", description: "Analysis result downloaded." });
+  };
+
+  const handleCopyToClipboard = () => {
+    if (!analysisResult) return;
+    const resultString = formatResultsForOutput(analysisResult);
+    navigator.clipboard.writeText(resultString).then(() => {
+      toast({ title: "Copied", description: "Analysis result copied to clipboard." });
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+      toast({ variant: "destructive", title: "Copy Failed", description: "Could not copy result to clipboard." });
+    });
+  };
+
 
   const renderResult = () => {
     if (!analysisResult) return null;
 
-    // Determine if ethical based on available flags
     const isContentEthical = analysisResult.isEthical === true || analysisResult.hasEthicalConcerns === false;
     const hasConcerns = analysisResult.isEthical === false || analysisResult.hasEthicalConcerns === true;
     const violations = analysisResult.ethicalViolations || [];
     const explanation = analysisResult.reasoning || analysisResult.summary || "No detailed explanation provided.";
 
     return (
+      <>
       <Alert variant={isContentEthical ? "default" : "destructive"} className="mt-4">
         {isContentEthical ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
         <AlertTitle>{isContentEthical ? "Ethical Content Assessment: Clear" : "Potential Ethical Concerns Found"}</AlertTitle>
         <AlertDescription>
           <p className="font-semibold mt-2">Explanation:</p>
-          <p className="whitespace-pre-wrap">{explanation}</p> {/* Use pre-wrap for better formatting */}
+          <p className="whitespace-pre-wrap">{explanation}</p>
           {hasConcerns && violations.length > 0 && (
             <>
               <p className="font-semibold mt-2">Detected Violations/Concerns:</p>
@@ -373,6 +386,17 @@ export function ContentAnalysis() {
            )}
         </AlertDescription>
       </Alert>
+       <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={handleDownloadResult}>
+            <Download className="mr-2 h-4 w-4" />
+            Download JSON
+          </Button>
+          <Button variant="outline" onClick={handleCopyToClipboard}>
+            <ClipboardCopy className="mr-2 h-4 w-4" />
+            Copy JSON
+          </Button>
+        </div>
+      </>
     );
   };
 
@@ -389,8 +413,7 @@ export function ContentAnalysis() {
   const isContentPresent = file || textInput.trim();
 
   const handleManualUploadClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-      // Find the hidden file input associated with the dropzone and click it
-       const fileInput = (event.target as HTMLElement).closest('[data-dropzone-root]')?.querySelector('input[type="file"]');
+      const fileInput = (event.target as HTMLElement).closest('[data-dropzone-root]')?.querySelector('input[type="file"]');
       if (fileInput) {
           (fileInput as HTMLInputElement).click();
       }
@@ -411,13 +434,12 @@ export function ContentAnalysis() {
           </TabsList>
           <TabsContent value="upload">
             <div
-              {...getRootProps({ className: 'dropzone' })} // Add className for easier querySelector
-               data-dropzone-root // Add data attribute for querySelector
+              {...getRootProps({ className: 'dropzone' })}
+               data-dropzone-root
                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
               }`}
             >
-              {/* Make the input visually hidden but functional */}
               <input {...getInputProps()} className="sr-only" />
               <FileUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               {isDragActive ? (
