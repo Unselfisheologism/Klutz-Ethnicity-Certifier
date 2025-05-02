@@ -333,29 +333,51 @@ export function ContentAnalysis() {
 
   const formatResultsForOutput = (result: PuterAnalysisResult): string => {
     if (!result) return "";
-    return JSON.stringify(result, null, 2); // Format as pretty-printed JSON
+
+    const isContentEthical = result.isEthical === true || result.hasEthicalConcerns === false;
+    const violations = result.ethicalViolations || [];
+    const explanation = result.reasoning || result.summary || "No detailed explanation provided.";
+
+    let output = `Ethical Analysis Result\n`;
+    output += `=========================\n\n`;
+    output += `Overall Assessment: ${isContentEthical ? 'Ethically Clear' : 'Potential Ethical Concerns Found'}\n\n`;
+    output += `Explanation:\n${explanation}\n\n`;
+
+    if (violations.length > 0) {
+        output += `Detected Violations/Concerns:\n`;
+        violations.forEach(violation => {
+            output += `- ${violation}\n`;
+        });
+    } else if (!isContentEthical) {
+        output += `No specific violations listed, but concerns were raised.\n`;
+    } else {
+        output += `No significant ethical violations detected.\n`;
+    }
+
+    return output;
   };
+
 
   const handleDownloadResult = () => {
     if (!analysisResult) return;
     const resultString = formatResultsForOutput(analysisResult);
-    const blob = new Blob([resultString], { type: 'application/json' });
+    const blob = new Blob([resultString], { type: 'text/plain' }); // Changed type
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'ethical_analysis_result.json';
+    a.download = 'ethical_analysis_result.txt'; // Changed extension
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: "Downloaded", description: "Analysis result downloaded." });
+    toast({ title: "Downloaded", description: "Analysis result downloaded as TXT." });
   };
 
   const handleCopyToClipboard = () => {
     if (!analysisResult) return;
     const resultString = formatResultsForOutput(analysisResult);
     navigator.clipboard.writeText(resultString).then(() => {
-      toast({ title: "Copied", description: "Analysis result copied to clipboard." });
+      toast({ title: "Copied", description: "Analysis result copied to clipboard as text." });
     }).catch(err => {
       console.error('Failed to copy:', err);
       toast({ variant: "destructive", title: "Copy Failed", description: "Could not copy result to clipboard." });
@@ -365,7 +387,7 @@ export function ContentAnalysis() {
   const CertificationBadge = ({ isEthical }: { isEthical: boolean }) => (
     <div className={cn(
       "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium",
-      isEthical ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+      isEthical ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" // Added dark mode styles
     )}>
       {isEthical ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
       {isEthical ? "Ethically Certified" : "Ethical Concerns"}
@@ -423,8 +445,9 @@ export function ContentAnalysis() {
                 style={{ width: '24px', height: '24px', marginRight: '8px' }} // Adjusted size and margin
                 loop
                 autoplay
+                className="inline-block" // Ensure it behaves like an inline element
               />
-              Download JSON
+              Download TXT
            </Button>
           <Button variant="outline" onClick={handleCopyToClipboard}>
             {/* Clipboard Lottie Animation */}
@@ -435,8 +458,9 @@ export function ContentAnalysis() {
                 style={{ width: '24px', height: '24px', marginRight: '8px' }} // Adjusted size and margin
                 loop
                 autoplay
+                className="inline-block" // Ensure it behaves like an inline element
               />
-            Copy JSON
+            Copy Text
           </Button>
         </div>
       </>
@@ -568,3 +592,4 @@ export function ContentAnalysis() {
     </Card>
   );
 }
+
