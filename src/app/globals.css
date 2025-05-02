@@ -8,73 +8,75 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* Almost White */
-    --foreground: 240 10% 4%; /* Very Dark Blue-Gray */
+    --background: 210 30% 98%; /* Very light cool gray/blue */
+    --foreground: 210 10% 23%; /* Dark gray-blue */
     --card: 0 0% 100%; /* White */
-    --card-foreground: 240 10% 4%; /* Very Dark Blue-Gray */
+    --card-foreground: 210 10% 23%; /* Dark gray-blue */
     --popover: 0 0% 100%; /* White */
-    --popover-foreground: 240 10% 4%; /* Very Dark Blue-Gray */
-    --primary: 240 70% 60%; /* Bright Blue */
+    --popover-foreground: 210 10% 23%; /* Dark gray-blue */
+    --primary: 210 80% 55%; /* Blue */
     --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 240 15% 96%; /* Very Light Blue-Gray */
-    --secondary-foreground: 240 10% 10%; /* Dark Blue-Gray */
-    --muted: 240 15% 96%; /* Very Light Blue-Gray */
-    --muted-foreground: 240 5% 55%; /* Mid Gray */
-    --accent: 270 70% 70%; /* Lavender/Purple */
-    --accent-foreground: 240 10% 4%; /* Very Dark Blue-Gray */
+    --secondary: 210 40% 96%; /* Very light blue */
+    --secondary-foreground: 210 10% 30%; /* Darker gray-blue */
+    --muted: 210 40% 96%; /* Very light blue */
+    --muted-foreground: 210 8% 45%; /* Mid gray-blue */
+    --accent: 30 90% 55%; /* Orange */
+    --accent-foreground: 0 0% 100%; /* White */
     --destructive: 0 84.2% 60.2%; /* Default Red */
     --destructive-foreground: 0 0% 98%; /* Default Light */
-    --border: 240 10% 90%; /* Light Blue-Gray */
-    --input: 240 10% 90%; /* Light Blue-Gray */
-    --ring: 240 70% 60%; /* Bright Blue */
-    --chart-1: 240 70% 60%; /* Blue */
-    --chart-2: 270 70% 70%; /* Purple */
-    --chart-3: 300 70% 70%; /* Pink */
-    --chart-4: 220 70% 65%; /* Lighter Blue */
-    --chart-5: 290 60% 75%; /* Lighter Pink/Magenta */
+    --border: 210 20% 90%; /* Light blue-gray border */
+    --input: 210 20% 92%; /* Slightly darker input */
+    --ring: 210 80% 55%; /* Blue */
+    --chart-1: 210 80% 55%; /* Blue */
+    --chart-2: 30 90% 55%; /* Orange */
+    --chart-3: 210 70% 70%; /* Lighter Blue */
+    --chart-4: 30 80% 70%; /* Lighter Orange */
+    --chart-5: 180 60% 50%; /* Teal */
     --radius: 0.5rem;
-    --sidebar-background: 240 10% 97%; /* Light neutral */
-    --sidebar-foreground: 240 5% 30%; /* Darker neutral */
-    --sidebar-primary: 240 70% 60%; /* Bright Blue */
+    /* Sidebar specific colors - derived from main theme */
+    --sidebar-background: 210 30% 97%; /* Slightly darker light blue-gray */
+    --sidebar-foreground: 210 10% 25%; /* Dark gray-blue */
+    --sidebar-primary: 210 80% 55%; /* Blue */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 240 15% 94%; /* Lighter neutral accent */
-    --sidebar-accent-foreground: 240 10% 10%; /* Dark Blue-Gray */
-    --sidebar-border: 240 10% 90%; /* Light Blue-Gray */
-    --sidebar-ring: 240 70% 60%; /* Bright Blue */
+    --sidebar-accent: 30 90% 55%; /* Orange */
+    --sidebar-accent-foreground: 0 0% 100%; /* White */
+    --sidebar-border: 210 20% 88%; /* Slightly darker border */
+    --sidebar-ring: 210 80% 55%; /* Blue */
   }
   .dark {
-    --background: 240 10% 4%; /* Very Dark Blue-Gray */
-    --foreground: 0 0% 98%; /* Almost White */
-    --card: 240 10% 10%; /* Dark Blue-Gray */
-    --card-foreground: 0 0% 98%; /* Almost White */
-    --popover: 240 10% 10%; /* Dark Blue-Gray */
-    --popover-foreground: 0 0% 98%; /* Almost White */
-    --primary: 240 70% 70%; /* Lighter Bright Blue for Dark */
-    --primary-foreground: 240 10% 4%; /* Very Dark Blue-Gray */
-    --secondary: 240 10% 15%; /* Dark Blue-Gray */
-    --secondary-foreground: 240 5% 90%; /* Light Gray */
-    --muted: 240 10% 15%; /* Dark Blue-Gray */
-    --muted-foreground: 240 5% 65%; /* Lighter Gray */
-    --accent: 270 70% 80%; /* Lighter Lavender/Purple for Dark */
-    --accent-foreground: 0 0% 100%; /* White */
-    --destructive: 0 70% 50%; /* Slightly less intense Red for Dark */
+    --background: 215 28% 17%; /* Dark blue-gray */
+    --foreground: 210 40% 98%; /* Light blue-gray */
+    --card: 215 28% 22%; /* Slightly lighter dark blue-gray */
+    --card-foreground: 210 40% 98%; /* Light blue-gray */
+    --popover: 215 28% 22%; /* Slightly lighter dark blue-gray */
+    --popover-foreground: 210 40% 98%; /* Light blue-gray */
+    --primary: 210 80% 65%; /* Lighter Blue for dark mode */
+    --primary-foreground: 215 15% 15%; /* Very dark blue for contrast */
+    --secondary: 215 20% 25%; /* Darker blue-gray */
+    --secondary-foreground: 210 40% 90%; /* Lighter gray-blue */
+    --muted: 215 20% 25%; /* Darker blue-gray */
+    --muted-foreground: 210 15% 65%; /* Mid-light gray-blue */
+    --accent: 30 90% 65%; /* Lighter Orange for dark mode */
+    --accent-foreground: 25 15% 15%; /* Very dark brown/gray for contrast */
+    --destructive: 0 70% 55%; /* Slightly adjusted red */
     --destructive-foreground: 0 0% 98%; /* Almost White */
-    --border: 240 10% 20%; /* Dark Blue-Gray */
-    --input: 240 10% 20%; /* Dark Blue-Gray */
-    --ring: 240 70% 70%; /* Lighter Bright Blue for Dark */
-    --chart-1: 240 70% 70%; /* Blue */
-    --chart-2: 270 70% 80%; /* Purple */
-    --chart-3: 300 70% 80%; /* Pink */
-    --chart-4: 220 70% 75%; /* Lighter Blue */
-    --chart-5: 290 60% 85%; /* Lighter Pink/Magenta */
-    --sidebar-background: 240 10% 8%; /* Dark neutral */
-    --sidebar-foreground: 240 5% 90%; /* Light Gray */
-    --sidebar-primary: 240 70% 70%; /* Lighter Bright Blue */
-    --sidebar-primary-foreground: 240 10% 4%; /* Very Dark Blue-Gray */
-    --sidebar-accent: 240 10% 12%; /* Darker neutral accent */
-    --sidebar-accent-foreground: 240 5% 95%; /* Very Light Gray */
-    --sidebar-border: 240 10% 15%; /* Dark Blue-Gray */
-    --sidebar-ring: 240 70% 70%; /* Lighter Bright Blue */
+    --border: 215 20% 30%; /* Mid-dark blue-gray border */
+    --input: 215 20% 32%; /* Slightly darker input */
+    --ring: 210 80% 65%; /* Lighter Blue */
+    --chart-1: 210 80% 65%; /* Lighter Blue */
+    --chart-2: 30 90% 65%; /* Lighter Orange */
+    --chart-3: 210 70% 80%; /* Even Lighter Blue */
+    --chart-4: 30 80% 80%; /* Even Lighter Orange */
+    --chart-5: 180 60% 60%; /* Lighter Teal */
+    /* Sidebar specific colors - derived from main dark theme */
+    --sidebar-background: 215 28% 15%; /* Even darker blue-gray */
+    --sidebar-foreground: 210 40% 95%; /* Lighter blue-gray */
+    --sidebar-primary: 210 80% 65%; /* Lighter Blue */
+    --sidebar-primary-foreground: 215 15% 15%; /* Very dark blue */
+    --sidebar-accent: 30 90% 65%; /* Lighter Orange */
+    --sidebar-accent-foreground: 25 15% 15%; /* Very dark brown/gray */
+    --sidebar-border: 215 20% 28%; /* Darker border */
+    --sidebar-ring: 210 80% 65%; /* Lighter Blue */
   }
 }
 
