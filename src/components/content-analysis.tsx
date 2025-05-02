@@ -74,6 +74,20 @@ declare global {
   interface Window {
     puter?: any; // Use 'any' for simplicity or define a more specific type if available
   }
+  // Add type definition for the custom Lottie player element if needed for TypeScript
+  namespace JSX {
+    interface IntrinsicElements {
+      'dotlottie-player': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        src: string;
+        background?: string;
+        speed?: string;
+        style?: React.CSSProperties;
+        loop?: boolean;
+        autoplay?: boolean;
+        className?: string; // Allow className prop
+      }, HTMLElement>;
+    }
+  }
 }
 
 // Function to clean potential markdown code blocks from AI response
@@ -387,12 +401,28 @@ export function ContentAnalysis() {
         </AlertDescription>
       </Alert>
        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={handleDownloadResult}>
-            <Download className="mr-2 h-4 w-4" />
-            Download JSON
-          </Button>
+           <Button variant="outline" onClick={handleDownloadResult}>
+             {/* Download Lottie Animation */}
+             <dotlottie-player
+                src="https://lottie.host/70c4e327-d665-413f-87d1-21b2d0bba57c/U24PAi7V9g.lottie"
+                background="transparent"
+                speed="1"
+                style={{ width: '24px', height: '24px', marginRight: '8px' }} // Adjusted size and margin
+                loop
+                autoplay
+              />
+              Download JSON
+           </Button>
           <Button variant="outline" onClick={handleCopyToClipboard}>
-            <ClipboardCopy className="mr-2 h-4 w-4" />
+            {/* Clipboard Lottie Animation */}
+             <dotlottie-player
+                src="https://lottie.host/92a0d77c-4b46-438d-80c5-a951d8edd8ef/w7N1aQ7FJe.lottie"
+                background="transparent"
+                speed="1"
+                style={{ width: '24px', height: '24px', marginRight: '8px' }} // Adjusted size and margin
+                loop
+                autoplay
+              />
             Copy JSON
           </Button>
         </div>
