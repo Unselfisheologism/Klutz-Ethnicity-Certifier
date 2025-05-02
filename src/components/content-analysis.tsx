@@ -76,6 +76,13 @@ declare global {
   }
 }
 
+// Function to clean potential markdown code blocks from AI response
+function cleanJsonResponse(rawJson: string): string {
+  // Remove ```json ... ``` markdown code blocks
+  const cleaned = rawJson.trim().replace(/^```json\s*([\s\S]*?)\s*```$/, '$1');
+  return cleaned;
+}
+
 export function ContentAnalysis() {
   const [file, setFile] = useState<File | null>(null);
   const [textInput, setTextInput] = useState<string>('');
@@ -213,7 +220,8 @@ export function ContentAnalysis() {
         const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
 
         try {
-           const parsedResult = JSON.parse(rawResult);
+           const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
+           const parsedResult = JSON.parse(cleanedResult);
            result = {
              isEthical: parsedResult.isEthical ?? !parsedResult.hasEthicalConcerns, // Handle both potential keys
              ethicalViolations: parsedResult.ethicalViolations || [],
@@ -246,7 +254,8 @@ export function ContentAnalysis() {
         const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response)); // Adapt based on actual response structure
 
         try {
-            const parsedResult = JSON.parse(rawResult);
+            const cleanedResult = cleanJsonResponse(rawResult); // Clean the response first
+            const parsedResult = JSON.parse(cleanedResult);
              result = {
                hasEthicalConcerns: parsedResult.hasEthicalConcerns ?? !parsedResult.isEthical, // Handle both keys
                ethicalViolations: parsedResult.ethicalViolations || [],
