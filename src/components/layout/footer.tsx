@@ -7,14 +7,17 @@ export function Footer() {
   const [currentYear, setCurrentYear] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
+    // This check ensures the code only runs on the client side.
+    if (typeof window !== 'undefined') {
+      setCurrentYear(new Date().getFullYear());
+    }
   }, []);
 
   return (
-    <footer className="bg-secondary py-4 mt-auto">
+    <footer className="bg-background py-4 mt-auto border-t">
       <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
         <p>
-          &copy; {currentYear ? currentYear : 'Loading...'} Ethical Eye. All rights reserved.
+          &copy; {currentYear ? currentYear : new Date().getFullYear()} Ethical Eye. All rights reserved.
         </p>
       </div>
     </footer>
