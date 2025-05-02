@@ -216,7 +216,29 @@ export function ContentAnalysis() {
         const prompt = `${promptBase}\n\nContent Type: Image`;
 
         const response = await puter.ai.chat(prompt, imageDataUrl, false, { model: 'gpt-4o' });
-        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response));
+        // Attempt to get string content safely, handling various possible response structures
+        let rawResult = '';
+        if (typeof response === 'string') {
+            rawResult = response;
+        } else if (typeof response === 'object' && response !== null) {
+            if (response.message && typeof response.message.content === 'string') {
+                rawResult = response.message.content;
+            } else if (typeof response.text === 'string') {
+                rawResult = response.text;
+            } else {
+                // Fallback: Try stringifying the entire object, though less ideal
+                try {
+                  rawResult = JSON.stringify(response);
+                } catch (stringifyError) {
+                  console.error("Could not stringify the response object:", stringifyError);
+                  rawResult = '{ "error": "Could not process response object" }'; // Provide a default error JSON string
+                }
+            }
+        } else {
+             console.error("Unexpected response type:", typeof response);
+             rawResult = '{ "error": "Unexpected response type from AI" }';
+        }
+
         const cleanedResult = cleanJsonResponse(rawResult);
 
         try {
@@ -244,7 +266,28 @@ export function ContentAnalysis() {
         const prompt = `${promptBase}\n\nContent Type: Text\n\nText Content:\n${textContent}`;
 
         const response = await puter.ai.chat(prompt, false, { model: 'gpt-4o' });
-        const rawResult = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response));
+         // Attempt to get string content safely, handling various possible response structures
+        let rawResult = '';
+        if (typeof response === 'string') {
+            rawResult = response;
+        } else if (typeof response === 'object' && response !== null) {
+            if (response.message && typeof response.message.content === 'string') {
+                rawResult = response.message.content;
+            } else if (typeof response.text === 'string') {
+                rawResult = response.text;
+            } else {
+                // Fallback: Try stringifying the entire object, though less ideal
+                 try {
+                  rawResult = JSON.stringify(response);
+                 } catch (stringifyError) {
+                   console.error("Could not stringify the response object:", stringifyError);
+                   rawResult = '{ "error": "Could not process response object" }'; // Provide a default error JSON string
+                 }
+            }
+        } else {
+             console.error("Unexpected response type:", typeof response);
+             rawResult = '{ "error": "Unexpected response type from AI" }';
+        }
         const cleanedResult = cleanJsonResponse(rawResult);
 
         try {
@@ -466,16 +509,23 @@ export function ContentAnalysis() {
 
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-lg overflow-hidden"> {/* Added responsive padding and rounded corners */}
-      <CardHeader className="p-4 md:p-6"> {/* Responsive padding */}
-        <CardTitle className="text-lg md:text-xl">Content Ethics Analyzer</CardTitle> {/* Responsive text size */}
-        <CardDescription className="text-sm md:text-base">Upload an image or text file, or paste text to check for potential ethical concerns.</CardDescription> {/* Responsive text size */}
+    // Added responsive padding and rounded corners
+    <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-lg overflow-hidden">
+      {/* Responsive padding */}
+      <CardHeader className="p-4 md:p-6">
+        {/* Responsive text size */}
+        <CardTitle className="text-lg md:text-xl">Content Ethics Analyzer</CardTitle>
+        {/* Responsive text size */}
+        <CardDescription className="text-sm md:text-base">Upload an image or text file, or paste text to check for potential ethical concerns.</CardDescription>
       </CardHeader>
-      <CardContent className="p-4 md:p-6"> {/* Responsive padding */}
+      {/* Responsive padding */}
+      <CardContent className="p-4 md:p-6">
         <Tabs defaultValue="upload" className="w-full" onPaste={handlePaste}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="upload" className="text-sm md:text-base">Upload File</TabsTrigger> {/* Responsive text size */}
-            <TabsTrigger value="paste" className="text-sm md:text-base">Paste Text</TabsTrigger> {/* Responsive text size */}
+            {/* Responsive text size */}
+            <TabsTrigger value="upload" className="text-sm md:text-base">Upload File</TabsTrigger>
+            {/* Responsive text size */}
+            <TabsTrigger value="paste" className="text-sm md:text-base">Paste Text</TabsTrigger>
           </TabsList>
           <TabsContent value="upload">
             <div
@@ -486,13 +536,17 @@ export function ContentAnalysis() {
               }`}
             >
               <input {...getInputProps()} className="sr-only" />
-              <FileUp className="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-2 md:mb-4" /> {/* Adjusted size */}
+               {/* Adjusted size */}
+              <FileUp className="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-2 md:mb-4" />
               {isDragActive ? (
-                <p className="text-primary font-semibold text-sm md:text-base">Drop the file here ...</p> {/* Adjusted text size */}
+                 // Adjusted text size
+                <p className="text-primary font-semibold text-sm md:text-base">Drop the file here ...</p>
               ) : (
                  <>
-                    <p className="text-muted-foreground text-sm md:text-base">Drag & drop a supported image or text file here</p> {/* Adjusted text size */}
-                    <Button variant="outline" size="sm" className="mt-2 md:mt-4 text-xs md:text-sm" onClick={handleManualUploadClick}> {/* Adjusted margin and text size */}
+                     {/* Adjusted text size */}
+                    <p className="text-muted-foreground text-sm md:text-base">Drag & drop a supported image or text file here</p>
+                     {/* Adjusted margin and text size */}
+                    <Button variant="outline" size="sm" className="mt-2 md:mt-4 text-xs md:text-sm" onClick={handleManualUploadClick}>
                         Or Click to Upload
                     </Button>
                  </>
@@ -513,11 +567,12 @@ export function ContentAnalysis() {
             )}
           </TabsContent>
           <TabsContent value="paste">
+              {/* Adjusted min-height and text size */}
              <Textarea
                 placeholder="Paste your text content here..."
                 value={textInput}
                 onChange={handleTextChange}
-                className="min-h-[100px] md:min-h-[200px] resize-y text-sm md:text-base" // Adjusted min-height and text size
+                className="min-h-[100px] md:min-h-[200px] resize-y text-sm md:text-base"
                 aria-label="Paste text content"
              />
              <p className="text-xs text-muted-foreground mt-1">You can also paste images directly onto the page (if browser supported).</p>
@@ -528,20 +583,25 @@ export function ContentAnalysis() {
         {error && (
           <Alert variant="destructive" className="mt-4">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="text-sm md:text-base">Error</AlertTitle> {/* Responsive text size */}
-            <AlertDescription className="text-xs md:text-sm">{error}</AlertDescription> {/* Responsive text size */}
+             {/* Responsive text size */}
+            <AlertTitle className="text-sm md:text-base">Error</AlertTitle>
+             {/* Responsive text size */}
+            <AlertDescription className="text-xs md:text-sm">{error}</AlertDescription>
           </Alert>
         )}
+         {/* Adjusted margin */}
+        <Separator className="my-4 md:my-6" />
 
-        <Separator className="my-4 md:my-6" /> {/* Adjusted margin */}
-
-        <div className="flex flex-col sm:flex-row justify-end gap-2"> {/* Adjusted flex direction */}
+         {/* Adjusted flex direction */}
+        <div className="flex flex-col sm:flex-row justify-end gap-2">
           {isContentPresent && (
-            <Button variant="outline" onClick={clearContent} disabled={isAnalyzing} className="w-full sm:w-auto text-sm md:text-base px-3 py-1 md:px-4 md:py-2"> {/* Responsive width and padding/text size */}
+             // Responsive width and padding/text size
+            <Button variant="outline" onClick={clearContent} disabled={isAnalyzing} className="w-full sm:w-auto text-sm md:text-base px-3 py-1 md:px-4 md:py-2">
               Clear
             </Button>
           )}
-          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent} className="w-full sm:w-auto text-sm md:text-base px-3 py-1 md:px-4 md:py-2"> {/* Responsive width and padding/text size */}
+           {/* Responsive width and padding/text size */}
+          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent} className="w-full sm:w-auto text-sm md:text-base px-3 py-1 md:px-4 md:py-2">
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -556,13 +616,15 @@ export function ContentAnalysis() {
         {isAnalyzing && (
           <div className="mt-4 text-center text-muted-foreground flex items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm md:text-base">Processing your content, please wait...</span> {/* Responsive text size */}
+             {/* Responsive text size */}
+            <span className="text-sm md:text-base">Processing your content, please wait...</span>
           </div>
         )}
 
         {analysisResult && !isAnalyzing && (
           <div className="mt-6">
-            <h3 className="text-base md:text-lg font-semibold mb-2">Analysis Results</h3> {/* Responsive text size */}
+             {/* Responsive text size */}
+            <h3 className="text-base md:text-lg font-semibold mb-2">Analysis Results</h3>
             {renderResult()}
           </div>
         )}
