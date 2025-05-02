@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FileUp, ClipboardPaste, Loader2, Image as ImageIcon, FileText, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,17 +10,56 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeImageEthics, AnalyzeImageEthicsOutput } from '@/ai/flows/analyze-image-ethics';
-import { analyzeTextEthics, AnalyzeTextEthicsOutput } from '@/ai/flows/analyze-text-ethics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
-type AnalysisResult = AnalyzeImageEthicsOutput | AnalyzeTextEthicsOutput | null;
+// Define the expected structure for analysis results from Puter.js
+type PuterAnalysisResult = {
+  isEthical?: boolean;
+  ethicalViolations?: string[];
+  reasoning?: string; // Primarily for images
+  summary?: string; // Primarily for text
+  hasEthicalConcerns?: boolean; // Primarily for text
+} | null;
+
 type AnalysisType = 'image' | 'text' | null;
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ACCEPTED_TEXT_TYPES = ['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+// Accepted file types
+const ACCEPTED_IMAGE_TYPES: { [key: string]: string[] } = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/gif': ['.gif'],
+  'image/webp': ['.webp'],
+  'image/bmp': ['.bmp'],
+  'image/tiff': ['.tif', '.tiff'],
+  // Add more image types as needed
+};
+const ACCEPTED_TEXT_TYPES: { [key: string]: string[] } = {
+  'application/pdf': ['.pdf'],
+  'text/plain': ['.txt'],
+  'application/msword': ['.doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'text/markdown': ['.md'],
+  'text/csv': ['.csv'],
+  'application/rtf': ['.rtf'],
+  // Add more text types as needed
+};
 
+// Combine all accepted types for dropzone
+const ALL_ACCEPTED_TYPES = { ...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_TEXT_TYPES };
+
+
+// Utility to read file content as text
+function readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(file);
+    });
+}
+
+// Utility to read file as Data URI
 function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -30,15 +69,21 @@ function fileToDataUri(file: File): Promise<string> {
   });
 }
 
+// Type guard for Puter object
+declare global {
+  interface Window {
+    puter?: any; // Use 'any' for simplicity or define a more specific type if available
+  }
+}
+
 export function ContentAnalysis() {
   const [file, setFile] = useState<File | null>(null);
   const [textInput, setTextInput] = useState<string>('');
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(null);
+  const [analysisResult, setAnalysisResult] = useState<PuterAnalysisResult>(null);
   const [analysisType, setAnalysisType] = useState<AnalysisType>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0); // For visual feedback, not actual upload state
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -49,16 +94,16 @@ export function ContentAnalysis() {
 
     if (droppedFile) {
       const fileType = droppedFile.type;
-      if (ACCEPTED_IMAGE_TYPES.includes(fileType)) {
+      if (Object.keys(ACCEPTED_IMAGE_TYPES).includes(fileType)) {
         setFile(droppedFile);
         setAnalysisType('image');
-        setUploadProgress(100); // Simulate instant upload for demo
-      } else if (ACCEPTED_TEXT_TYPES.includes(fileType)) {
+        setUploadProgress(100);
+      } else if (Object.keys(ACCEPTED_TEXT_TYPES).includes(fileType)) {
          setFile(droppedFile);
          setAnalysisType('text');
-         setUploadProgress(100); // Simulate instant upload for demo
+         setUploadProgress(100);
       } else {
-        setError(`Unsupported file type: ${fileType}. Please upload images (jpg, png) or text documents (pdf, doc, txt).`);
+        setError(`Unsupported file type: ${fileType}. Please upload a supported image or text document.`);
         setFile(null);
         setAnalysisType(null);
         setUploadProgress(0);
@@ -76,7 +121,7 @@ export function ContentAnalysis() {
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.kind === 'file' && ACCEPTED_IMAGE_TYPES.includes(item.type)) {
+       if (item.kind === 'file' && Object.keys(ACCEPTED_IMAGE_TYPES).includes(item.type)) {
         const blob = item.getAsFile();
         if (blob) {
           setFile(blob);
@@ -90,8 +135,8 @@ export function ContentAnalysis() {
         item.getAsString((text) => {
           setTextInput(text);
           setAnalysisType('text');
-          setUploadProgress(0); // No file upload for text paste
-          setFile(null); // Clear file
+          setUploadProgress(0);
+          setFile(null);
         });
         foundContent = true;
         break;
@@ -105,7 +150,7 @@ export function ContentAnalysis() {
     }
   }, []);
 
-  const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+   const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       setTextInput(event.target.value);
       if (event.target.value.trim()) {
           setAnalysisType('text');
@@ -121,9 +166,15 @@ export function ContentAnalysis() {
       }
   }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, noClick: true, multiple: false });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+      onDrop,
+      noClick: true,
+      multiple: false,
+      accept: ALL_ACCEPTED_TYPES
+  });
 
-  const handleAnalyze = () => {
+
+ const handleAnalyze = async () => {
     if (!file && !textInput.trim()) {
       setError('Please upload a file or paste/enter text to analyze.');
       return;
@@ -132,101 +183,155 @@ export function ContentAnalysis() {
       setError('Please analyze either the uploaded file or the entered text, not both.');
       return;
     }
+    if (typeof window === 'undefined' || !window.puter) {
+      setError('Puter.js is not loaded. Please ensure the script is included and loaded correctly.');
+      return;
+    }
 
     setError(null);
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
-    startTransition(async () => {
-      try {
-        let result: AnalysisResult = null;
-        let dataUri = '';
+    const puter = window.puter;
 
+    try {
+      let result: PuterAnalysisResult = null;
+      const promptBase = `You are an AI ethics analyst. Analyze the following content for potential ethical concerns.
+      Identify specific types of ethical violations (e.g., hate speech, discrimination, misinformation, harmful content, privacy violation).
+      Determine if the content is ethical (isEthical: true/false or hasEthicalConcerns: true/false).
+      Provide a brief reasoning or summary.
+      Respond ONLY with a JSON object containing the fields: 'isEthical' (boolean, for images), 'hasEthicalConcerns' (boolean, for text), 'ethicalViolations' (array of strings), and 'reasoning' (string, for images) or 'summary' (string, for text). Example for image: {"isEthical": false, "ethicalViolations": ["Potential Hate Speech"], "reasoning": "Contains symbols associated with hate groups."}. Example for text: {"hasEthicalConcerns": true, "ethicalViolations": ["Misinformation"], "summary": "The text promotes baseless claims about a public health issue."}`;
+
+
+      if (analysisType === 'image' && file) {
+        const imageDataUrl = await fileToDataUri(file);
+        const prompt = `${promptBase}\n\nContent Type: Image`;
+
+        // Using puter.ai.chat with image URL (GPT-4 Vision equivalent)
+        const response = await puter.ai.chat(prompt, imageDataUrl, { model: 'gpt-4o' }); // Use gpt-4o as it handles vision too
+        const rawResult = response?.choices?.[0]?.message?.content || response?.text; // Adapt based on actual response structure
+
+        try {
+           const parsedResult = JSON.parse(rawResult);
+           result = {
+             isEthical: parsedResult.isEthical ?? !parsedResult.hasEthicalConcerns, // Handle both potential keys
+             ethicalViolations: parsedResult.ethicalViolations || [],
+             reasoning: parsedResult.reasoning || parsedResult.summary || "No details provided.",
+           };
+        } catch (parseError) {
+           console.error("Failed to parse AI response:", parseError, "Raw:", rawResult);
+           // Fallback: Try to extract info if JSON parsing fails
+           result = {
+               isEthical: !/unethical|violation|concern/i.test(rawResult),
+               ethicalViolations: rawResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
+               reasoning: rawResult, // Show raw response if parsing fails
+           };
+        }
+
+
+      } else if (analysisType === 'text' && (file || textInput.trim())) {
+        let textContent = '';
         if (file) {
-           dataUri = await fileToDataUri(file);
-        } else if (textInput.trim()) {
-           const base64Text = btoa(unescape(encodeURIComponent(textInput.trim())));
-           dataUri = `data:text/plain;base64,${base64Text}`;
-        }
-
-
-        if (analysisType === 'image' && file) {
-          result = await analyzeImageEthics({ photoDataUri: dataUri });
-        } else if (analysisType === 'text' && (file || textInput.trim())) {
-          result = await analyzeTextEthics({ textDataUri: dataUri });
+          textContent = await readFileAsText(file);
         } else {
-            throw new Error("Invalid analysis type or missing content.");
+          textContent = textInput.trim();
+        }
+        const prompt = `${promptBase}\n\nContent Type: Text\n\nText Content:\n${textContent}`;
+
+        // Using puter.ai.chat for text analysis (GPT-4o)
+        const response = await puter.ai.chat(prompt, { model: 'gpt-4o' });
+        const rawResult = response?.choices?.[0]?.message?.content || response?.text; // Adapt based on actual response structure
+
+        try {
+            const parsedResult = JSON.parse(rawResult);
+             result = {
+               hasEthicalConcerns: parsedResult.hasEthicalConcerns ?? !parsedResult.isEthical, // Handle both keys
+               ethicalViolations: parsedResult.ethicalViolations || [],
+               summary: parsedResult.summary || parsedResult.reasoning || "No details provided.",
+             };
+        } catch (parseError) {
+             console.error("Failed to parse AI response:", parseError, "Raw:", rawResult);
+             // Fallback
+             result = {
+                 hasEthicalConcerns: /unethical|violation|concern/i.test(rawResult),
+                 ethicalViolations: rawResult.match(/Violation: (.*?)(?:\n|$)/gi)?.map(m => m.replace(/Violation: /i, '').trim()) || [],
+                 summary: rawResult,
+             };
         }
 
-        setAnalysisResult(result);
-        toast({
-          title: 'Analysis Complete',
-          description: 'Ethical review finished successfully.',
-        });
-      } catch (err) {
-        console.error('Analysis failed:', err);
-        setError(`Analysis failed. ${err instanceof Error ? err.message : 'Please try again.'}`);
-        toast({
-          variant: 'destructive',
-          title: 'Analysis Error',
-          description: `An error occurred during analysis. ${err instanceof Error ? err.message : 'Please check the console and try again.'}`,
-        });
-      } finally {
-        setIsAnalyzing(false);
+      } else {
+        throw new Error("Invalid analysis type or missing content.");
       }
-    });
+
+      setAnalysisResult(result);
+      toast({
+        title: 'Analysis Complete',
+        description: 'Ethical review finished successfully.',
+      });
+    } catch (err) {
+      console.error('Analysis failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred. Please try again.';
+      setError(`Analysis failed: ${errorMessage}`);
+      toast({
+        variant: 'destructive',
+        title: 'Analysis Error',
+        description: `An error occurred during analysis: ${errorMessage}`,
+      });
+       // Attempt to sign in if error suggests authentication issue
+       if (typeof err === 'string' && err.includes('authenticate')) {
+           try {
+               await puter.auth.signIn();
+               toast({ title: "Authentication Required", description: "Please try analyzing again after signing in." });
+           } catch (authError) {
+               console.error("Puter sign-in failed:", authError);
+               setError("Authentication failed. Please ensure you are logged into Puter.");
+           }
+       }
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
+
 
   const renderResult = () => {
     if (!analysisResult) return null;
 
-    if (analysisType === 'image' && 'isEthical' in analysisResult) {
-       const imageResult = analysisResult as AnalyzeImageEthicsOutput;
-       return (
-        <Alert variant={imageResult.isEthical ? "default" : "destructive"} className="mt-4">
-          {imageResult.isEthical ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          <AlertTitle>{imageResult.isEthical ? "Ethical Content Detected" : "Potential Ethical Concerns Found"}</AlertTitle>
-          <AlertDescription>
-            <p className="font-semibold mt-2">Reasoning:</p>
-            <p>{imageResult.reasoning}</p>
-            {!imageResult.isEthical && imageResult.ethicalViolations?.length > 0 && (
-              <>
-                <p className="font-semibold mt-2">Detected Violations:</p>
+    // Determine if ethical based on available flags
+    const isContentEthical = analysisResult.isEthical === true || analysisResult.hasEthicalConcerns === false;
+    const hasConcerns = analysisResult.isEthical === false || analysisResult.hasEthicalConcerns === true;
+    const violations = analysisResult.ethicalViolations || [];
+    const explanation = analysisResult.reasoning || analysisResult.summary || "No detailed explanation provided.";
+
+    return (
+      <Alert variant={isContentEthical ? "default" : "destructive"} className="mt-4">
+        {isContentEthical ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+        <AlertTitle>{isContentEthical ? "Ethical Content Assessment: Clear" : "Potential Ethical Concerns Found"}</AlertTitle>
+        <AlertDescription>
+          <p className="font-semibold mt-2">Explanation:</p>
+          <p>{explanation}</p>
+          {hasConcerns && violations.length > 0 && (
+            <>
+              <p className="font-semibold mt-2">Detected Violations/Concerns:</p>
+              <ul className="list-disc list-inside">
+                {violations.map((violation, index) => (
+                  <li key={index}>{violation}</li>
+                ))}
+              </ul>
+            </>
+          )}
+           {!hasConcerns && violations.length > 0 && (
+             <>
+               <p className="font-semibold mt-2">Minor Points Noted (but not rising to concern level):</p>
                 <ul className="list-disc list-inside">
-                  {imageResult.ethicalViolations.map((violation, index) => (
-                    <li key={index}>{violation}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </AlertDescription>
-        </Alert>
-      );
-    } else if (analysisType === 'text' && 'ethicalAnalysis' in analysisResult) {
-        const textResult = analysisResult as AnalyzeTextEthicsOutput;
-        const { hasEthicalConcerns, ethicalViolations, summary } = textResult.ethicalAnalysis;
-        return (
-        <Alert variant={!hasEthicalConcerns ? "default" : "destructive"} className="mt-4">
-          {!hasEthicalConcerns ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-          <AlertTitle>{!hasEthicalConcerns ? "No Major Ethical Concerns Found" : "Potential Ethical Concerns Found"}</AlertTitle>
-          <AlertDescription>
-            <p className="font-semibold mt-2">Summary:</p>
-            <p>{summary}</p>
-            {hasEthicalConcerns && ethicalViolations?.length > 0 && (
-              <>
-                <p className="font-semibold mt-2">Detected Violations:</p>
-                <ul className="list-disc list-inside">
-                  {ethicalViolations.map((violation, index) => (
-                    <li key={index}>{violation}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    return null; // Should not happen if logic is correct
+                    {violations.map((violation, index) => (
+                        <li key={index}>{violation}</li>
+                     ))}
+                 </ul>
+             </>
+           )}
+        </AlertDescription>
+      </Alert>
+    );
   };
 
   const clearContent = () => {
@@ -246,7 +351,7 @@ export function ContentAnalysis() {
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
         <CardTitle className="text-xl font-semibold">Content Ethics Analyzer</CardTitle>
-        <CardDescription>Upload an image or text to check for potential ethical concerns.</CardDescription>
+        <CardDescription>Upload an image or text file, or paste text to check for potential ethical concerns.</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="upload" className="w-full" onPaste={handlePaste}>
@@ -257,26 +362,27 @@ export function ContentAnalysis() {
           <TabsContent value="upload">
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
               }`}
             >
-              <input {...getInputProps()} accept={`${ACCEPTED_IMAGE_TYPES.join(',')},${ACCEPTED_TEXT_TYPES.join(',')}`} />
+              <input {...getInputProps()} />
               <FileUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               {isDragActive ? (
                 <p className="text-primary font-semibold">Drop the file here ...</p>
               ) : (
                  <>
-                    <p className="text-muted-foreground">Drag & drop an image (jpg, png) or text (pdf, doc, txt) file here</p>
+                    <p className="text-muted-foreground">Drag & drop a supported image or text file here</p>
                     <Button variant="outline" size="sm" className="mt-4" onClick={(e) => {
                         e.stopPropagation(); // Prevent triggering dropzone
-                        const inputElement = document.querySelector('input[type="file"]') as HTMLInputElement | null;
-                        inputElement?.click();
+                        const fileInput = (e.target as HTMLElement).closest('.dropzone')?.querySelector('input[type="file"]');
+                        (fileInput as HTMLInputElement | null)?.click();
                     }}>
                         Or Click to Upload
                     </Button>
                  </>
               )}
+              <p className="text-xs text-muted-foreground mt-2">Supports: Images (jpg, png, gif, etc.), Text (pdf, docx, txt, etc.)</p>
             </div>
             {file && uploadProgress > 0 && (
               <div className="mt-4">
@@ -299,7 +405,7 @@ export function ContentAnalysis() {
                 className="min-h-[150px] resize-y"
                 aria-label="Paste text content"
              />
-             <p className="text-xs text-muted-foreground mt-1">You can also paste images directly onto the page.</p>
+             <p className="text-xs text-muted-foreground mt-1">You can also paste images directly onto the page (if browser supported).</p>
           </TabsContent>
         </Tabs>
 
@@ -320,8 +426,8 @@ export function ContentAnalysis() {
               Clear
             </Button>
           )}
-          <Button onClick={handleAnalyze} disabled={isAnalyzing || isPending || !isContentPresent}>
-            {isAnalyzing || isPending ? (
+          <Button onClick={handleAnalyze} disabled={isAnalyzing || !isContentPresent}>
+            {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Analyzing...
@@ -332,7 +438,7 @@ export function ContentAnalysis() {
           </Button>
         </div>
 
-        {(isAnalyzing || isPending) && (
+        {isAnalyzing && (
           <div className="mt-4 text-center text-muted-foreground flex items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <span>Processing your content, please wait...</span>

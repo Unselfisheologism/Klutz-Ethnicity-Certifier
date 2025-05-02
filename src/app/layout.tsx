@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script'; // Import next/script
 import { Inter } from 'next/font/google'; // Using Inter as a standard clean font
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -29,6 +30,8 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
+        {/* Add Puter.js script */}
+        <Script src="https://js.puter.com/v2/" strategy="lazyOnload" />
       </body>
     </html>
   );
