@@ -17,7 +17,7 @@ export function Footer() {
     <footer className="bg-background py-4 mt-auto border-t">
       <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
         <p>
-          &copy; {currentYear ? currentYear : new Date().getFullYear()} Klutz Ethics. All rights reserved.
+          &copy; {currentYear ? currentYear : new Date().getFullYear()} Klutz. All rights reserved.
         </p>
       </div>
     </footer>
