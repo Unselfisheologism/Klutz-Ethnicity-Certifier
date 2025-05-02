@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileUp, ClipboardPaste, Loader2, Image as ImageIcon, FileText, AlertTriangle, CheckCircle, Download, ClipboardCopy } from 'lucide-react';
+import { FileUp, ClipboardPaste, Loader2, Image as ImageIcon, FileText, AlertTriangle, CheckCircle, Download, ClipboardCopy, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from '@/lib/utils'; // Import cn utility
 
 // Define the expected structure for analysis results from Puter.js
 type PuterAnalysisResult = {
@@ -361,6 +362,15 @@ export function ContentAnalysis() {
     });
   };
 
+  const CertificationBadge = ({ isEthical }: { isEthical: boolean }) => (
+    <div className={cn(
+      "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium",
+      isEthical ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+    )}>
+      {isEthical ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+      {isEthical ? "Ethically Certified" : "Ethical Concerns"}
+    </div>
+  );
 
   const renderResult = () => {
     if (!analysisResult) return null;
@@ -372,6 +382,9 @@ export function ContentAnalysis() {
 
     return (
       <>
+      <div className="mb-4">
+        <CertificationBadge isEthical={isContentEthical} />
+      </div>
       <Alert variant={isContentEthical ? "default" : "destructive"} className="mt-4">
         {isContentEthical ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
         <AlertTitle>{isContentEthical ? "Ethical Content Assessment: Clear" : "Potential Ethical Concerns Found"}</AlertTitle>
